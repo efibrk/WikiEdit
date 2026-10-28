@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- .NET Framework 4.8 is preinstalled on Windows 10 1903+ and Windows 11, so the application
+         ships as ~2 MB of files instead of a ~142 MB self-contained .NET 10 build. -->
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- Pinned to x64. As AnyCPU the application runs as a 64-bit process on 64-bit Windows, but the
+         WebView2 package then copies only the 32-bit WebView2Loader.dll, which cannot load into it.
+         Naming the platform makes the build copy the matching loader and drops the unused x86 copy. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <!-- System.Text.Json and its dependencies need binding redirects on .NET Framework -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+
+  <!-- Metadata shown in the file properties of the published executable -->
+  <PropertyGroup>
+    <AssemblyName>WikiEdits</AssemblyName>
+    <RootNamespace>WikiEdits</RootNamespace>
+    <Product>ניטור עריכות בוויקיפדיה</Product>
+    <Description>כלי לניטור עריכות בוויקיפדיה: תרומות משתמש, היסטוריית ערך, הפרשים ובדיקת זכות הצבעה</Description>
+    <Version>1.0.0</Version>
+    <NeutralLanguage>he-IL</NeutralLanguage>
+    <Copyright>© 2026</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- A framework assembly on .NET Framework, so it needs an explicit reference -->
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <!-- Build-time only: generates the types .NET Framework lacks for modern C# syntax
+         (IsExternalInit for records and init setters, Index and Range for list patterns). -->
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

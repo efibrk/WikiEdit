@@ -1,0 +1,17 @@
+D:\Projects\Vik\artifacts\publish\runtimes\win-x64\native\WebView2Loader.dll
+D:\Projects\Vik\artifacts\publish\WikiEdits.exe
+D:\Projects\Vik\artifacts\publish\WikiEdits.exe.config
+D:\Projects\Vik\artifacts\publish\Microsoft.Bcl.AsyncInterfaces.dll
+D:\Projects\Vik\artifacts\publish\Microsoft.Web.WebView2.Core.dll
+D:\Projects\Vik\artifacts\publish\Microsoft.Web.WebView2.WinForms.dll
+D:\Projects\Vik\artifacts\publish\Microsoft.Web.WebView2.Wpf.dll
+D:\Projects\Vik\artifacts\publish\System.Buffers.dll
+D:\Projects\Vik\artifacts\publish\System.IO.Pipelines.dll
+D:\Projects\Vik\artifacts\publish\System.Memory.dll
+D:\Projects\Vik\artifacts\publish\System.Numerics.Vectors.dll
+D:\Projects\Vik\artifacts\publish\System.Runtime.CompilerServices.Unsafe.dll
+D:\Projects\Vik\artifacts\publish\System.Text.Encodings.Web.dll
+D:\Projects\Vik\artifacts\publish\System.Text.Json.dll
+D:\Projects\Vik\artifacts\publish\System.Threading.Tasks.Extensions.dll
+D:\Projects\Vik\artifacts\publish\System.ValueTuple.dll
+D:\Projects\Vik\artifacts\publish\WebView2Loader.dll

@@ -1,0 +1,196 @@
+<Window x:Class="WikiEdits.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="ניטור עריכות בוויקיפדיה"
+        Width="1300" Height="720" MinWidth="900" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        FlowDirection="RightToLeft"
+        FontFamily="Segoe UI" FontSize="13">
+
+    <DockPanel>
+
+        <!-- Status bar -->
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="lblStatus"
+                           Text="יש להזין שם משתמש וללחוץ על &quot;שליפת נתונים&quot;. לחיצה על שורה מציגה את ההפרש משמאל, לחיצה כפולה פותחת אותו בדפדפן." />
+            </StatusBarItem>
+        </StatusBar>
+
+        <!-- Query controls -->
+        <StackPanel DockPanel.Dock="Top" Margin="8,8,8,4">
+
+            <!-- Row 1: mode, name, fetch and paging on the right; site, namespace and row count on the far left -->
+            <DockPanel x:Name="rowSearch" LastChildFill="True">
+                <!-- Under right-to-left flow, Dock="Right" is the visual left edge -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="12,0,0,0">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="אתר:" />
+                    <!-- Editable: the list holds the major Wikipedias, any other wiki domain can still be typed in.
+                         The dropdown shows "language (domain)"; the text box shows the domain, which is what the code uses. -->
+                    <ComboBox x:Name="cmbSite" Width="150" IsEditable="True" FlowDirection="LeftToRight"
+                              TextSearch.TextPath="Domain">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Label, Mode=OneWay}" FlowDirection="RightToLeft" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock x:Name="lblNamespace" Style="{StaticResource FieldLabel}" Text="מרחב שם:" />
+                    <ComboBox x:Name="cmbNamespace" Width="70">
+                        <ComboBoxItem Content="הכל" />
+                        <ComboBoxItem Content="ערכים" />
+                        <ComboBoxItem Content="שיחה" />
+                        <ComboBoxItem Content="משתמש" />
+                    </ComboBox>
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="מספר שורות:" />
+                    <ComboBox x:Name="cmbPageSize" Width="50" IsEditable="True" FlowDirection="LeftToRight" Margin="0,2,0,2" />
+                </StackPanel>
+
+                <WrapPanel>
+                    <ComboBox x:Name="cmbMode" Width="110" SelectionChanged="cmbMode_SelectionChanged">
+                        <ComboBoxItem Content="לפי משתמש" />
+                        <ComboBoxItem Content="לפי ערך" />
+                    </ComboBox>
+                    <TextBlock x:Name="lblUser" Style="{StaticResource FieldLabel}" Text="שם משתמש:" />
+                    <ComboBox x:Name="cmbUser" Width="130" IsEditable="True" IsTextSearchEnabled="True"
+                              KeyDown="cmbUser_KeyDown" />
+                    <!-- While a fetch runs this button reads "stop" and cancels it -->
+                    <Button x:Name="btnRun" Content="שליפת נתונים" MinWidth="110" Click="btnRun_Click" />
+
+                    <!-- Paging. Arrows: "previous" points right (towards the start), "next" points left -->
+                    <Button x:Name="btnPrev" MinWidth="72" Margin="18,2,6,2" IsEnabled="False" Click="btnPrev_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="הקודם" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock x:Name="lblPage" Style="{StaticResource FieldLabel}" MinWidth="56" Margin="0" TextAlignment="Center" />
+                    <Button x:Name="btnNext" MinWidth="72" Margin="6,2,6,2" IsEnabled="False" Click="btnNext_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="הבא" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+            </DockPanel>
+
+            <!-- Row 2: voting eligibility check -->
+            <WrapPanel x:Name="rowVote" Margin="0,6,0,0">
+                <TextBlock Style="{StaticResource FieldLabel}" Text="תאריך תחילת ההצבעה:" />
+                <DatePicker x:Name="dtpVoteStart" Width="130" />
+                <!-- Days between the determining day and the vote start (the rule says 14); lower values let the user
+                     preview eligibility for a vote that has not been scheduled yet -->
+                <TextBlock Style="{StaticResource FieldLabel}" Text="ימי המתנה:" />
+                <ComboBox x:Name="cmbWaitDays" Width="55" FlowDirection="LeftToRight" />
+                <Button x:Name="btnCheckVote" Content="בדיקת זכות הצבעה" MinWidth="130" Margin="0,2,12,2" Click="btnCheckVote_Click" />
+                <TextBlock x:Name="lblVoteResult" Style="{StaticResource FieldLabel}" FontWeight="Bold" />
+                <TextBlock x:Name="lblVoteDetails" Style="{StaticResource FieldLabel}" Foreground="Gray" />
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- Account / page info panel and statistics. Hidden until a query runs. -->
+        <Border x:Name="pnlUserInfo" DockPanel.Dock="Top" Background="#F2F2F2" Padding="8,4" Visibility="Collapsed">
+            <WrapPanel>
+                <TextBlock x:Name="lblInfoEdits" Style="{StaticResource InfoText}" />
+                <TextBlock x:Name="lblInfoReg" Style="{StaticResource InfoText}" />
+                <TextBlock x:Name="lblInfoGroups" Style="{StaticResource InfoText}" />
+                <TextBlock x:Name="lblInfoBlock" Style="{StaticResource InfoText}" />
+                <TextBlock x:Name="lblInfoSurvived" Style="{StaticResource InfoText}" />
+                <TextBlock x:Name="lblInfoReverted" Style="{StaticResource InfoText}" />
+            </WrapPanel>
+        </Border>
+
+        <!-- Grid on the right (column 0 in right-to-left flow), diff panel on the left -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" MinWidth="360" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="2*" MinWidth="240" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="grid" Grid.Column="0"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single" SelectionUnit="FullRow"
+                      CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False"
+                      CanUserSortColumns="True" CanUserResizeColumns="True"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#E0E0E0" AlternatingRowBackground="#FAFAFA"
+                      ColumnWidth="*"
+                      SelectionChanged="grid_SelectionChanged"
+                      MouseDoubleClick="grid_MouseDoubleClick"
+                      PreviewMouseRightButtonDown="grid_PreviewMouseRightButtonDown"
+                      ContextMenuOpening="grid_ContextMenuOpening">
+                <DataGrid.ContextMenu>
+                    <ContextMenu x:Name="gridMenu">
+                        <MenuItem x:Name="menuOpenPage" Header="הצגת היסטוריית הערך" Click="menuOpenPage_Click" />
+                        <MenuItem x:Name="menuOpenUser" Header="הצגת העריכות של המשתמש" Click="menuOpenUser_Click" />
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+                <DataGrid.Columns>
+                    <!-- SortMemberPath is set explicitly on the formatted columns so a header click sorts by the
+                         underlying value (date, number) rather than by the displayed string -->
+                    <DataGridTextColumn x:Name="colTimestamp" Header="תאריך" Width="16*" SortMemberPath="Timestamp">
+                        <DataGridTextColumn.Binding>
+                            <Binding Path="Timestamp" StringFormat="{}{0:yyyy-MM-dd HH:mm}" />
+                        </DataGridTextColumn.Binding>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn x:Name="colTitle" Header="דף" Width="26*" Binding="{Binding Title}" />
+                    <DataGridTextColumn x:Name="colUser" Header="עורך" Width="22*" Binding="{Binding User}" Visibility="Collapsed" />
+                    <DataGridTextColumn x:Name="colSizeDiff" Header="שינוי (בתים)" Width="11*" SortMemberPath="SizeDiff">
+                        <DataGridTextColumn.Binding>
+                            <Binding Path="SizeDiff" StringFormat="{}{0:+#,0;-#,0;0}" />
+                        </DataGridTextColumn.Binding>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn x:Name="colComment" Header="תקציר עריכה" Width="32*" Binding="{Binding Comment}" />
+                    <DataGridTextColumn x:Name="colTags" Header="תגיות" Width="18*" Binding="{Binding TagsDisplay}" />
+                    <DataGridCheckBoxColumn x:Name="colMinor" Header="משנית" Width="7*" Binding="{Binding Minor}" />
+                    <DataGridCheckBoxColumn x:Name="colNew" Header="דף חדש" Width="7*" Binding="{Binding IsNew}" />
+                    <DataGridCheckBoxColumn x:Name="colTop" Header="גרסה נוכחית" Width="9*" Binding="{Binding IsTop}" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext" Background="#DDDDDD" />
+
+            <DockPanel Grid.Column="2">
+                <!-- Diff panel header: comparison mode and page-history navigation -->
+                <WrapPanel DockPanel.Dock="Top" Margin="4,4,4,0">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="הצגת הפרש:" />
+                    <ComboBox x:Name="cmbDiffMode" Width="135" SelectionChanged="cmbDiffMode_SelectionChanged">
+                        <ComboBoxItem Content="מול גרסה קודמת" />
+                        <ComboBoxItem Content="מול גרסה נוכחית" />
+                    </ComboBox>
+                    <!-- History navigation. Arrows: "previous" points right (towards older), "next" points left -->
+                    <Button x:Name="btnRevPrev" MinWidth="80" Margin="0,2,2,2" IsEnabled="False" Click="btnRevPrev_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="קודמת" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="btnRevNext" MinWidth="80" Margin="2,2,6,2" IsEnabled="False" Click="btnRevNext_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="הבאה" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="btnRevBack" Content="נבחרה" MinWidth="70" IsEnabled="False" Click="btnRevBack_Click" />
+                    <!-- Toggles the panel between the diff and the full article at the shown revision -->
+                    <Button x:Name="btnArticle" Content="ערך" MinWidth="52" IsEnabled="False" Click="btnArticle_Click" />
+                </WrapPanel>
+                <TextBlock x:Name="lblDiffTitle" DockPanel.Dock="Top" Margin="6,4,6,0" FontWeight="Bold"
+                           TextTrimming="CharacterEllipsis" Text="יש לבחור שורה בטבלה כדי לראות את ההפרש." />
+                <TextBlock x:Name="lblDiffComment" DockPanel.Dock="Top" Margin="6,0,6,4" Foreground="Gray"
+                           TextTrimming="CharacterEllipsis" />
+
+                <Grid>
+                    <!-- The browser control is a hosted Win32 window; WPF's right-to-left flow would mirror it,
+                         so it stays left-to-right and the text direction is set inside the HTML -->
+                    <wv2:WebView2 x:Name="webDiff" FlowDirection="LeftToRight" />
+                    <TextBlock x:Name="lblWebError" Visibility="Collapsed" Foreground="Firebrick"
+                               TextWrapping="Wrap" Margin="16" VerticalAlignment="Top" />
+                </Grid>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>
